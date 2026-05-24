@@ -1,6 +1,7 @@
 import { BLOCKLIST, UNLOCK_MS, matchSite } from './config.js';
 
 const GATE_URL = chrome.runtime.getURL('gate.html');
+const FOCUS_URL = chrome.runtime.getURL('focus.html');
 
 async function isUnlocked(site) {
   const key = `unlock_${site}`;
@@ -21,8 +22,8 @@ async function handleNavigation({ tabId, url, frameId }) {
 
   const { mode } = BLOCKLIST[site];
 
-  if (mode === 'redirect-newtab') {
-    chrome.tabs.update(tabId, { url: 'chrome://newtab/' });
+  if (mode === 'redirect-focus') {
+    chrome.tabs.update(tabId, { url: FOCUS_URL });
     return;
   }
 

@@ -15,7 +15,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["gate.html"],
+      "resources": ["gate.html", "focus.html"],
       "matches": ["<all_urls>"]
     }
   ],

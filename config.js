@@ -6,7 +6,7 @@ export const CODES = {
 };
 
 export const BLOCKLIST = {
-  instagram: { host: 'instagram.com', mode: 'redirect-newtab' },
+  instagram: { host: 'instagram.com', mode: 'redirect-focus' },
   linkedin:  { host: 'linkedin.com',  mode: 'gate' },
   youtube:   { host: 'youtube.com',   mode: 'gate' },
 };

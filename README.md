@@ -1,6 +1,6 @@
 # Distraction Blocker
 
-Distraction Blocker is a personal Chrome extension that puts friction between you and the sites you waste time on. Instagram is redirected to a blank new tab on every visit. LinkedIn and YouTube are gated behind long codes stored as plain constants in `config.js` — to unlock either site for 15 minutes, you have to open the repo, open the file, and copy the code out. Each site has its own code and its own timer. The point isn't to make distraction impossible; it's to make it annoying enough that you don't do it on autopilot.
+Distraction Blocker is a personal Chrome extension that puts friction between you and the sites you waste time on. Instagram is redirected to a custom `focus.html` page on every visit. LinkedIn and YouTube are gated behind long codes stored as plain constants in `config.js` — to unlock either site for 15 minutes, you have to open the repo, open the file, and copy the code out. Each site has its own code and its own timer. The point isn't to make distraction impossible; it's to make it annoying enough that you don't do it on autopilot.
 
 ## Install
 
@@ -15,7 +15,8 @@ Distraction Blocker is a personal Chrome extension that puts friction between yo
 ## Tuning
 
 - `UNLOCK_MS` in `config.js` controls how long an unlock lasts.
-- Add or remove sites in `BLOCKLIST`. `mode: 'redirect-newtab'` hard-blocks; `mode: 'gate'` requires a code.
+- Add or remove sites in `BLOCKLIST`. `mode: 'redirect-focus'` hard-blocks (sends the tab to `focus.html`); `mode: 'gate'` requires a code.
+- Edit `focus.html` to change what you see when a hard-blocked site is opened.
 
 ## Reset an unlock manually
 

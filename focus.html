@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOCUS.exe — Parv</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e0a;
+    --bg-deep: #050805;
+    --green: #00ff41;
+    --green-dim: #00b32d;
+    --green-glow: rgba(0, 255, 65, 0.4);
+    --red: #ff2e2e;
+    --red-glow: rgba(255, 46, 46, 0.5);
+    --amber: #ffb000;
+    --white: #e8ffe8;
+    --gray: #5a6a5a;
+    --grid: rgba(0, 255, 65, 0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    overflow-x: hidden;
+    min-height: 100vh;
+    cursor: crosshair;
+  }
+
+  /* CRT scanlines + flicker */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px,
+      rgba(0,0,0,0.18) 3px
+    );
+    pointer-events: none;
+    z-index: 100;
+    animation: scanflicker 4s infinite;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%),
+      linear-gradient(rgba(0, 255, 65, 0.02), rgba(0, 255, 65, 0.02));
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  @keyframes scanflicker {
+    0%, 100% { opacity: 1; }
+    98% { opacity: 1; }
+    99% { opacity: 0.85; }
+  }
+
+  /* Background grid */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+    animation: gridscroll 20s linear infinite;
+  }
+
+  @keyframes gridscroll {
+    from { background-position: 0 0; }
+    to { background-position: 40px 40px; }
+  }
+
+  /* Matrix rain canvas */
+  #matrix {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--green-dim);
+    padding: 8px 16px;
+    font-size: 11px;
+    margin-bottom: 32px;
+    background: rgba(0, 20, 0, 0.6);
+    backdrop-filter: blur(2px);
+  }
+
+  .topbar .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red-glow);
+    margin-right: 8px;
+    animation: pulse 1.2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* The HIT */
+  .hit {
+    margin: 60px 0 40px;
+    position: relative;
+  }
+
+  .hit-prefix {
+    font-size: 13px;
+    color: var(--green-dim);
+    margin-bottom: 16px;
+    letter-spacing: 0.2em;
+  }
+
+  .callout {
+    font-family: 'VT323', monospace;
+    font-size: clamp(48px, 11vw, 140px);
+    line-height: 0.95;
+    color: var(--white);
+    text-shadow:
+      0 0 10px var(--green-glow),
+      0 0 30px var(--green-glow),
+      2px 0 var(--red),
+      -2px 0 #00ffff;
+    letter-spacing: -0.02em;
+    animation: glitch 4s infinite;
+  }
+
+  @keyframes glitch {
+    0%, 92%, 100% {
+      text-shadow:
+        0 0 10px var(--green-glow),
+        0 0 30px var(--green-glow),
+        2px 0 var(--red),
+        -2px 0 #00ffff;
+      transform: translate(0);
+    }
+    93% { transform: translate(-2px, 1px); text-shadow: 4px 0 var(--red), -4px 0 #00ffff; }
+    94% { transform: translate(2px, -1px); text-shadow: -3px 0 var(--red), 3px 0 #00ffff; }
+    95% { transform: translate(-1px, 2px); }
+    96% { transform: translate(0); }
+  }
+
+  .subline {
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--green);
+    border-left: 3px solid var(--red);
+    padding-left: 16px;
+    max-width: 700px;
+    line-height: 1.7;
+  }
+
+  .subline .blink {
+    display: inline-block;
+    background: var(--green);
+    color: var(--bg-deep);
+    padding: 1px 6px;
+    animation: blink 1s steps(2) infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  /* Cost ticker */
+  .cost-panel {
+    margin: 48px 0;
+    border: 1px solid var(--red);
+    background:
+      linear-gradient(135deg, rgba(255, 46, 46, 0.08), transparent),
+      rgba(20, 0, 0, 0.5);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cost-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+    animation: sweep 3s infinite;
+  }
+
+  @keyframes sweep {
+    to { left: 100%; }
+  }
+
+  .cost-label {
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 0.3em;
+    margin-bottom: 12px;
+  }
+
+  .cost-value {
+    font-family: 'VT323', monospace;
+    font-size: clamp(36px, 7vw, 72px);
+    color: var(--white);
+    text-shadow: 0 0 20px var(--red-glow);
+    line-height: 1;
+  }
+
+  .cost-sub {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--gray);
+  }
+
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .cost-cell {
+    border-left: 2px solid var(--green-dim);
+    padding-left: 12px;
+  }
+
+  .cost-cell .k { font-size: 10px; color: var(--gray); letter-spacing: 0.2em; }
+  .cost-cell .v { font-family: 'VT323', monospace; font-size: 28px; color: var(--amber); }
+
+  /* Mission block */
+  .mission {
+    margin: 48px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 700px) {
+    .mission { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    border: 1px solid var(--green-dim);
+    background: rgba(0, 20, 0, 0.4);
+    padding: 24px;
+    backdrop-filter: blur(2px);
+    position: relative;
+  }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--green-dim);
+    letter-spacing: 0.2em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--green-dim);
+  }
+
+  .panel h2 {
+    font-family: 'VT323', monospace;
+    font-size: 36px;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .panel p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--green);
+  }
+
+  .stack-list {
+    list-style: none;
+    margin-top: 12px;
+  }
+
+  .stack-list li {
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 1px dotted rgba(0, 255, 65, 0.15);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .stack-list li::before {
+    content: '> ';
+    color: var(--red);
+    margin-right: 8px;
+  }
+
+  .stack-list .tag {
+    color: var(--amber);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+  }
+
+  /* Quote rotator */
+  .quote {
+    margin: 60px 0;
+    text-align: center;
+    padding: 40px 20px;
+    border-top: 1px solid var(--green-dim);
+    border-bottom: 1px solid var(--green-dim);
+    position: relative;
+  }
+
+  .quote-text {
+    font-family: 'VT323', monospace;
+    font-size: clamp(28px, 4vw, 44px);
+    color: var(--white);
+    line-height: 1.3;
+    text-shadow: 0 0 12px var(--green-glow);
+    min-height: 90px;
+  }
+
+  .quote-attr {
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.3em;
+  }
+
+  /* Action */
+  .action {
+    margin: 60px 0;
+    text-align: center;
+  }
+
+  .action-prompt {
+    font-size: 13px;
+    color: var(--green-dim);
+    margin-bottom: 20px;
+    letter-spacing: 0.2em;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 16px 32px;
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    position: relative;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .btn.primary {
+    background: var(--green);
+    color: var(--bg-deep);
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+
+  .btn:hover {
+    background: var(--white);
+    color: var(--bg-deep);
+    box-shadow: 0 0 30px var(--green-glow);
+    transform: translateY(-2px);
+  }
+
+  .btn.danger {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn.danger:hover {
+    background: var(--red);
+    color: var(--bg-deep);
+    box-shadow: 0 0 30px var(--red-glow);
+  }
+
+  /* Footer log */
+  .log {
+    margin-top: 60px;
+    font-size: 11px;
+    color: var(--gray);
+    border-top: 1px dashed var(--green-dim);
+    padding-top: 16px;
+  }
+
+  .log-line { margin: 4px 0; }
+  .log-line .ts { color: var(--green-dim); }
+  .log-line .ok { color: var(--green); }
+  .log-line .warn { color: var(--amber); }
+  .log-line .err { color: var(--red); }
+
+  .caret::after {
+    content: '_';
+    animation: blink 1s steps(2) infinite;
+    color: var(--green);
+  }
+
+  /* Self-callout list */
+  .callouts {
+    margin: 32px 0;
+  }
+  .callout-item {
+    padding: 12px 16px;
+    border-left: 3px solid var(--amber);
+    background: rgba(255, 176, 0, 0.04);
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--white);
+    line-height: 1.6;
+  }
+  .callout-item .lbl {
+    color: var(--amber);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    display: block;
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<canvas id="matrix"></canvas>
+
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div><span class="dot"></span>SESSION HIJACKED // FOCUS.exe v1.0</div>
+    <div id="clock">--:--:--</div>
+  </div>
+
+  <!-- THE HIT -->
+  <section class="hit">
+    <div class="hit-prefix">> incoming_transmission --priority=MAX --target=parv</div>
+    <h1 class="callout">STOP.<br>YOU KNOW<br>WHY.</h1>
+    <div class="subline">
+      You weren't supposed to be here. You opened a tab. Then another. Then this.
+      The page you actually wanted is closed. Good. <span class="blink">CLOSE THIS ONE TOO.</span>
+    </div>
+  </section>
+
+  <!-- COST PANEL -->
+  <section class="cost-panel">
+    <div class="cost-label">[ OPPORTUNITY_COST // LIVE ]</div>
+    <div class="cost-value" id="cost-main">00:00:00</div>
+    <div class="cost-sub">time since you got redirected here. every second was supposed to compound.</div>
+
+    <div class="cost-grid">
+      <div class="cost-cell">
+        <div class="k">LINES NOT WRITTEN</div>
+        <div class="v" id="loc">0</div>
+      </div>
+      <div class="cost-cell">
+        <div class="k">PAPERS NOT READ</div>
+        <div class="v" id="papers">0.00</div>
+      </div>
+      <div class="cost-cell">
+        <div class="k">COMMITS NOT MADE</div>
+        <div class="v" id="commits">0</div>
+      </div>
+      <div class="cost-cell">
+        <div class="k">DAYS TO 21</div>
+        <div class="v" id="days21">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section class="mission">
+    <div class="panel">
+      <div class="panel-header">
+        <span>// THE_BET</span>
+        <span>0x01</span>
+      </div>
+      <h2>You're building a company.</h2>
+      <p>
+        Not a job. Not a portfolio. A <em style="color:var(--amber);font-style:normal">company</em>.
+        The kind of thing that requires you to be the person who shows up
+        when no one is watching, when the dopamine is elsewhere, when it would
+        be easier to scroll. That's the entire game. The technical work is just
+        the visible part. The invisible part is right now.
+      </p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>// THE_MOAT</span>
+        <span>0x02</span>
+      </div>
+      <h2>AI is the lever. You're the fulcrum.</h2>
+      <p>
+        Everyone has access to the same models. The edge is depth — knowing
+        the math, the systems, the trade-offs at a level where you can build
+        things other people can't even describe. That edge is compounding right
+        now for the people who didn't open the distracting tab.
+      </p>
+    </div>
+  </section>
+
+  <!-- SELF CALLOUTS -->
+  <section class="callouts">
+    <div class="panel-header">
+      <span>// KNOWN_PATTERNS // detected_in_session</span>
+      <span>0x03</span>
+    </div>
+    <div class="callout-item">
+      <span class="lbl">PATTERN_01</span>
+      "I'll just check one thing." — You won't. You never do. It's been 40 minutes.
+    </div>
+    <div class="callout-item">
+      <span class="lbl">PATTERN_02</span>
+      "I deserve a break." — A break is a walk. A break is sleep. This is not a break.
+    </div>
+    <div class="callout-item">
+      <span class="lbl">PATTERN_03</span>
+      "I'm too tired to do real work right now." — Then do 15 minutes of real work and go to sleep. Either is better than this.
+    </div>
+    <div class="callout-item">
+      <span class="lbl">PATTERN_04</span>
+      "I'll start tomorrow." — Battlecode was won by people who didn't wait for tomorrow. Neither was KDSH.
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <section class="quote">
+    <div class="quote-text" id="quote">—</div>
+    <div class="quote-attr" id="quote-attr">[ rotating ]</div>
+  </section>
+
+  <!-- ACTION -->
+  <section class="action">
+    <div class="action-prompt">> select_action --required</div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="window.close(); history.back();">[ CLOSE TAB ]</button>
+      <a class="btn" href="https://github.com/Propar2750" target="_blank">[ OPEN GITHUB ]</a>
+      <a class="btn danger" onclick="document.getElementById('snooze').style.display='block'; return false;" href="#">[ I HAVE A REASON ]</a>
+    </div>
+    <div id="snooze" style="display:none; margin-top:24px; font-size:13px; color:var(--amber); max-width:500px; margin-left:auto; margin-right:auto; border:1px dashed var(--amber); padding:16px;">
+      No you don't. If you genuinely do, you know what it is and you don't need a button. Close the tab.
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <div class="log">
+    <div class="log-line"><span class="ts">[boot]</span> <span class="ok">OK</span> conviction_module loaded</div>
+    <div class="log-line"><span class="ts">[boot]</span> <span class="ok">OK</span> opportunity_cost_tracker active</div>
+    <div class="log-line"><span class="ts">[boot]</span> <span class="warn">WARN</span> dopamine_pathway: hijacked by short-form content</div>
+    <div class="log-line"><span class="ts">[boot]</span> <span class="err">ERR</span> deep_work_session: NOT_FOUND</div>
+    <div class="log-line"><span class="ts">[live]</span> <span class="caret"></span></div>
+  </div>
+
+</div>
+
+<script>
+  // --- Clock ---
+  function tick() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('clock').textContent =
+      pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // --- Opportunity cost ticker ---
+  const start = Date.now();
+  // assumed rates while distracted vs. doing real work
+  const LOC_PER_SEC = 0.05;       // ~3 lines/min of real code
+  const PAPER_PER_SEC = 0.00028;  // ~1 paper per hour of skim
+  const COMMIT_PER_SEC = 0.0028;  // ~10 commits/hour during a real session
+
+  function updateCost() {
+    const elapsed = Math.floor((Date.now() - start) / 1000);
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    const s = elapsed % 60;
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('cost-main').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+    document.getElementById('loc').textContent = Math.floor(elapsed * LOC_PER_SEC);
+    document.getElementById('papers').textContent = (elapsed * PAPER_PER_SEC).toFixed(2);
+    document.getElementById('commits').textContent = Math.floor(elapsed * COMMIT_PER_SEC);
+  }
+  updateCost();
+  setInterval(updateCost, 1000);
+
+  // --- Days to 21 (assuming current age ~18, born ~Aug 2007 — adjust if needed) ---
+  // Just shows days remaining in current calendar year as a "runway" anchor
+  (function(){
+    const now = new Date();
+    const eoy = new Date(now.getFullYear(), 11, 31);
+    const days = Math.ceil((eoy - now) / (1000*60*60*24));
+    document.getElementById('days21').textContent = days + 'd';
+    document.querySelector('#days21').parentElement.querySelector('.k').textContent = 'DAYS LEFT IN ' + now.getFullYear();
+  })();
+
+  // --- Quote rotator ---
+  const quotes = [
+    ["The work you avoid is the work that would change everything.", "anon"],
+    ["Compound interest applies to skill. You are currently not compounding.", "anon"],
+    ["In five years you will either have done it or you will have a story about why you didn't.", "anon"],
+    ["Discipline is choosing between what you want now and what you want most.", "abraham lincoln (misattributed, still true)"],
+    ["The cost of a distraction is not the distraction. It's the depth you never reach.", "anon"],
+    ["You don't rise to the level of your goals. You fall to the level of your systems.", "james clear"],
+    ["The market doesn't care that you were tired.", "anon"],
+    ["Every minute you spend here is a minute someone else is shipping.", "anon"],
+    ["You already know what to do. That's what makes this painful.", "anon"],
+    ["Intuition is built. You are not building it right now.", "anon"]
+  ];
+  let qi = Math.floor(Math.random() * quotes.length);
+  function rotateQuote() {
+    const q = document.getElementById('quote');
+    const a = document.getElementById('quote-attr');
+    q.style.opacity = 0;
+    a.style.opacity = 0;
+    setTimeout(() => {
+      q.textContent = '"' + quotes[qi][0] + '"';
+      a.textContent = '— ' + quotes[qi][1].toUpperCase();
+      q.style.transition = 'opacity 0.4s';
+      a.style.transition = 'opacity 0.4s';
+      q.style.opacity = 1;
+      a.style.opacity = 1;
+      qi = (qi + 1) % quotes.length;
+    }, 400);
+  }
+  rotateQuote();
+  setInterval(rotateQuote, 6000);
+
+  // --- Matrix rain ---
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let cols, drops;
+  function sizeMatrix() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width / 14);
+    drops = new Array(cols).fill(0).map(() => Math.random() * canvas.height);
+  }
+  sizeMatrix();
+  window.addEventListener('resize', sizeMatrix);
+
+  const chars = '01アイウエオカキクケコサシスセソabcdef{}[]<>=+-*/';
+  function drawMatrix() {
+    ctx.fillStyle = 'rgba(5, 8, 5, 0.08)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = '14px monospace';
+    for (let i = 0; i < cols; i++) {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i * 14, drops[i]);
+      if (drops[i] > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 14;
+    }
+  }
+  setInterval(drawMatrix, 60);
+
+  // --- Glitch the headline occasionally ---
+  const headline = document.querySelector('.callout');
+  const origText = headline.innerHTML;
+  const glitchVariants = [
+    'STOP.<br>YOU KNOW<br>WHY.',
+    'ST0P.<br>Y0U KN0W<br>WHY.',
+    'STOP.<br>BUILD<br>NOW.',
+    'CL0SE<br>THIS<br>TAB.',
+    'PARV.<br>STOP.<br>GO.'
+  ];
+  setInterval(() => {
+    if (Math.random() < 0.15) {
+      const v = glitchVariants[Math.floor(Math.random()*glitchVariants.length)];
+      headline.innerHTML = v;
+      setTimeout(() => headline.innerHTML = origText, 180);
+    }
+  }, 2200);
+</script>
+</body>
+</html>
