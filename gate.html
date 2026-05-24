@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Focus Tool — Gate</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, sans-serif;
+      background: #111; color: #eee;
+    }
+    main { width: min(560px, 90vw); }
+    h1 { font-weight: 500; font-size: 1.25rem; margin: 0 0 1.5rem; }
+    #site { color: #8ab4f8; }
+    input {
+      width: 100%; box-sizing: border-box;
+      padding: 0.75rem 1rem; font-size: 1rem;
+      background: #1c1c1c; color: #eee; border: 1px solid #333;
+      border-radius: 6px; font-family: ui-monospace, monospace;
+    }
+    input:focus { outline: none; border-color: #8ab4f8; }
+    button {
+      margin-top: 0.75rem; padding: 0.6rem 1.2rem;
+      background: #8ab4f8; color: #111; border: none; border-radius: 6px;
+      font-size: 0.95rem; cursor: pointer;
+    }
+    #err { color: #f28b82; margin-top: 0.75rem; min-height: 1.2em; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Enter code to unlock <span id="site"></span> for 15 minutes</h1>
+    <form id="form">
+      <input id="code" type="password" autocomplete="off" autofocus spellcheck="false">
+      <div><button type="submit">Unlock</button></div>
+      <div id="err"></div>
+    </form>
+  </main>
+  <script type="module" src="gate.js"></script>
+</body>
+</html>
